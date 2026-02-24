@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>M V Penha Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/output.css" />
+  </head>
+
+  <body class="bg-slate-900 text-slate-100 min-h-screen font-['Inter'] overflow-hidden">
+    <div class="flex h-screen">
+      <aside class="w-72 bg-slate-800 border-r border-slate-700 flex flex-col">
+        <div class="p-6 text-center">
+          <img src="./img/mvpenhalogo.png">
+        </div>
+        <hr class="p-4 border-slate-700">
+        <nav class="flex-1 px-4">
+          <button id="btnLoad" class="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20">
+            <span>Importar Planilha</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </nav>
+
+        <div class="p-6 border-t border-slate-700">
+          <div class="text-xs text-slate-500 italic">Planilha atual:</div>
+          <div id="fileName"class="text-sm truncate font-medium text-slate-300">
+            Nenhum arquivo...
+          </div>
+        </div>
+      </aside>
+
+      <main class="flex-1 p-8 overflow-y-auto">
+        <!-- Troca o header atual por esse -->
+        <header class="flex justify-between items-end mb-8">
+          <div>
+            <h2 class="text-3xl font-bold">Visão Geral</h2>
+            <p class="text-slate-400">Análise de gastos e consumo de combustível</p>
+          </div>
+          <!-- Abas -->
+          <div class="flex gap-2">
+            <button id="tabGraficos" onclick="trocarAba('graficos')" class="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white">
+              Gráficos
+            </button>
+            <button id="tabTabela" onclick="trocarAba('tabela')" class="px-4 py-2 rounded-lg font-semibold bg-slate-700 text-slate-300">
+              Planilha
+            </button>
+          </div>
+        </header>
+
+        <hr class="pb-6 border-slate-700
+        ">
+
+        <!-- Seção dos gráficos (já existia) -->
+        <div id="secaoGraficos">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-sm">
+              <p class="text-slate-400 text-sm font-medium mb-1">Valor Total</p>
+              <h3 id="totalGeral" class="text-2xl font-bold text-emerald-400">R$ 0,00</h3>
+              <div class="mt-2 text-xs text-slate-500">Soma de Valor Total</div>
+            </div>
+
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-sm">
+              <p class="text-slate-400 text-sm font-medium mb-1">Volume Total</p>
+              <h3 id="totalLitros" class="text-2xl font-bold text-blue-400">0 L</h3>
+              <div class="mt-2 text-xs text-slate-500">Soma de Litros Utilizados</div>
+            </div>
+
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-sm">
+              <p class="text-slate-400 text-sm font-medium mb-1">Registros</p>
+              <h3 id="totalRegistros" class="text-2xl font-bold text-purple-400">0</h3>
+              <div class="mt-2 text-xs text-slate-500">Total de linhas lidas</div>
+            </div>
+
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-sm">
+              <p class="text-slate-400 text-sm font-medium mb-1">Média Unitária</p>
+              <h3 id="mediaUnit" class="text-2xl font-bold text-orange-400">R$ 0,00</h3>
+              <div class="mt-2 text-xs text-slate-500">Média Valor Unit.</div>
+            </div>
+
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+
+            <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 h-112.5 flex flex-col">
+              <h4 class="text-white font-bold mb-4 text-center">Tipos de Combustíveis Mais Usados</h4>
+              <div class="grow w-full h-full min-h-75 relative">
+                <canvas id="chartCombustivel"></canvas>
+              </div>
+            </div>
+            <!-- Gasto por Estabelecimento -->
+            <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 h-112.5 flex flex-col">
+              <h4 class="text-white font-bold mb-4 text-center">Gastos por Estabelecimento</h4>
+              <div class="grow relative">
+                <canvas id="chartEstabelecimento"></canvas>
+              </div>
+            </div>
+
+            <!-- Top 10 Veículos -->
+            <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 h-112.5 flex flex-col">
+              <h4 class="text-white font-bold mb-4 text-center">Veículos Mais Consumidores</h4>
+              <div class="grow relative">
+                <canvas id="chartVeiculos"></canvas>
+              </div>
+            </div>
+
+            <!-- Comparativo -->
+            <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 h-112.5 flex flex-col">
+              <h4 class="text-white font-bold mb-4 text-center">Autorizado X Efetivado</h4>
+              <div class="grow relative">
+                <canvas id="chartComparativo"></canvas>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Seção da tabela (nova) -->
+        <div id="secaoTabela" class="hidden">
+          <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-700 text-slate-400 text-center">
+                  <th class="px-4 py-3">Data</th>
+                  <th class="px-4 py-3">Placa</th>
+                  <th class="px-4 py-3">Estabelecimento</th>
+                  <th class="px-4 py-3">Combustível</th>
+                  <th class="px-4 py-3">Litros Autorizados</th>
+                  <th class="px-4 py-3">Litros Efetivado</th>
+                  <th class="px-4 py-3">Valor Unitário</th>
+                  <th class="px-4 py-3">Valor Total</th>
+                  <th class="px-4 py-3">Motorista</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaCorpo"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="./js/renderer.js"></script>
+
+  </body>
+</html>
