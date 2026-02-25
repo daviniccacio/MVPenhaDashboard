@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { Menu } = require('electron');
 const path = require("path");
 const xlsx = require("xlsx");
+
+// Menu.setApplicationMenu(null);
 
 function createWindow() {
   const win = new BrowserWindow({

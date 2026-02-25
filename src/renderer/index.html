@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>M V Penha Dashboard</title>
+    <title>MV Penha Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
@@ -14,18 +14,27 @@
     <div class="flex h-screen">
       <aside class="w-72 bg-slate-800 border-r border-slate-700 flex flex-col">
         <div class="p-6 text-center">
-          <img src="./img/mvpenhalogo.png">
+          <img src="./img/mvpenhalogo.png" class="cursor-text">
         </div>
         <hr class="p-4 border-slate-700">
         <nav class="flex-1 px-4">
-          <button id="btnLoad" class="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20">
-            <span>Importar Planilha</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
+          <div class="flex flex-col gap-5">
+
+            <button id="btnLoad" class="w-full flex items-center justify-center gap-3 bg-blue-700 hover:bg-blue-600 text-white py-3 cursor-pointer rounded-xl font-semibold transition-all duration-700 shadow-lg shadow-blue-900/20 focus:ring-2 focus:ring-white">
+              <span>Importar Planilha</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-cloud-arrow-up" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708z"/>
+                <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383m.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z"/>
+              </svg>
+            </button>
+            <button onclick="exportarPDF()" id="btnExportar" disabled class="w-full flex items-center justify-center gap-3 bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-700 shadow-lg shadow-blue-900/20 focus:ring-2 focus:ring-white">
+              <span>Exportar para PDF</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-cloud-arrow-down" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M7.646 10.854a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 9.293V5.5a.5.5 0 0 0-1 0v3.793L6.354 8.146a.5.5 0 1 0-.708.708z"/>
+                <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383m.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z"/>
+              </svg>
+            </button>
+          </div>
         </nav>
 
         <div class="p-6 border-t border-slate-700">
@@ -41,14 +50,14 @@
         <header class="flex justify-between items-end mb-8">
           <div>
             <h2 class="text-3xl font-bold">Visão Geral</h2>
-            <p class="text-slate-400">Análise de gastos e consumo de combustível</p>
+            <p class="text-slate-400">Análise de consumo e abastecimento de combustível</p>
           </div>
           <!-- Abas -->
-          <div class="flex gap-2">
-            <button id="tabGraficos" onclick="trocarAba('graficos')" class="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white">
+          <div class="flex gap-4">
+            <button id="tabGraficos" onclick="trocarAba('graficos')" class="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white cursor-pointer ring-2 ring-offset-white transition duration-500 hover:bg-blue-600 hover:scale-105 focus:ring-2 ring-white">
               Gráficos
             </button>
-            <button id="tabTabela" onclick="trocarAba('tabela')" class="px-4 py-2 rounded-lg font-semibold bg-slate-700 text-slate-300">
+            <button id="tabTabela" onclick="trocarAba('tabela')" class="px-4 py-2 rounded-lg font-semibold bg-slate-700 text-slate-300 cursor-pointer transition duration-500 hover:bg-blue-60 hover:scale-105 focus:ring-2 ring-white">
               Planilha
             </button>
           </div>
@@ -124,7 +133,7 @@
 
         <!-- Seção da tabela (nova) -->
         <div id="secaoTabela" class="hidden">
-          <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+          <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden text-center">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-slate-700 text-slate-400 text-center">
@@ -146,7 +155,24 @@
 
       </main>
     </div>
+    
+    <div id="modalPDF" class="hidden fixed inset-0 z-50 items-center justify-center">
+      <div onclick="fecharModalPDF()" class="absolute inset-0 bg-black/60 backdrop-blur-lg"></div>
 
+      <div class="relative z-10 w-125 bg-slate-800 rounded-2xl p-8 shadow-2xl">
+        <h3 class="text-xl text-center font-bold">PDF Gerado!</h3>
+        <p class="text-lg text-center">O relatório foi gerado com sucesso.</p>
+
+        <div class="pt-20 flex items-center justify-center gap-5 text-center">
+          <button onclick="abrirPDF()" class="px-4 py-3 w-24 h-12 bg-blue-600 font-semibold rounded-2xl transition duration-500 hover:bg-slate-700">Abrir</button>
+          <button onclick="baixarPDF()" class="px-4 py-3 w-24 h-12 bg-blue-600 font-semibold rounded-2xl transition duration-500 hover:bg-green-600">Baixar</button>
+          <button onclick="fecharModalPDF()"class="px-4 py-3 w-24 h-12 bg-red-500 font-semibold rounded-2xl transition duration-500 hover:bg-red-900">Fechar</button>    
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="./js/renderer.js"></script>
 
