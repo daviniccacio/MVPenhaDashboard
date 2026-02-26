@@ -1,3 +1,5 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { Menu } = require('electron');
 const path = require("path");

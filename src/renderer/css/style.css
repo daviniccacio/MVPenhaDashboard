@@ -16,3 +16,7 @@
 ::-webkit-scrollbar-thumb:hover{
     background: #475569;
 }
+
+.search-icon {
+    color: rgb(148, 163, 184);
+}

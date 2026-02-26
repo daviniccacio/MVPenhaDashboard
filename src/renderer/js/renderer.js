@@ -4,14 +4,44 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnLoad = document.getElementById("btnLoad");
 
   btnLoad.addEventListener("click", async () => {
-    const response = await window.electronAPI.openExcel();
-    if (!response) return;
+    try{
+      const response = await window.electronAPI.openExcel();
+      if (!response) return;
+  
+      if(!response.data || response.data.length === 0){
+        mostrarErro("A planilha está vazia ou não foi possível ler os dados");
+        return;
+      }
+  
+      const primeiraLinha = normalizarItem(response.data[0]);
+      if(!primeiraLinha["Placa"] && !primeiraLinha["Estabelecimento"]){
+        mostrarErro("Formato de planilha não reconhecido. Verifique se o arquivo está correto");
+        return;
+      }
 
-    const { data, fileName } = response;
-    document.getElementById("fileName").innerText = fileName;
-    processarDados(data);
+      const { data, fileName } = response;
+      document.getElementById("fileName").innerText = fileName;
+      processarDados(data);
+    } catch(error){
+      console.error("Erro ao carregar o Excel:", error);
+      mostrarErro("Ocorreu um erro inesperado ao carregar a planilha");
+    }
   });
 });
+
+function mostrarErro(mensagem){
+  const modal = document.getElementById("modalErro");
+  const texto = document.getElementById("modalErroTexto");
+  if(texto) texto.innerText = mensagem;
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+}
+
+function fecharModalErro(){
+  const modal = document.getElementById("modalErro");
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+}
 
 function normalizarItem(itemRaw) {
   const mapa = {
@@ -102,20 +132,12 @@ function processarDados(dadosRaw) {
   console.log("Segunda linha:", JSON.stringify(normalizarItem(dados[1])));
 
   // Atualiza os cards
-  document.getElementById("totalGeral").innerText =
-    totalGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-  document.getElementById("totalLitros").innerText =
-    `${totalLitros.toLocaleString("pt-BR", { minimumFractionDigits: 0 })} L`;
-
-  document.getElementById("totalRegistros").innerText = dados.filter(item => {
-    const i = normalizarItem(item);
-    return i["Placa"] && !i["Placa"].toString().toLowerCase().includes("total") && i["Placa"].toString().trim().toLowerCase() !== "placa";
-  }).length;
-
   const media = totalLitros > 0 ? totalGeral / totalLitros : 0;
-  document.getElementById("mediaUnit").innerText =
-    media.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  animarContador("totalGeral", totalGeral, "moeda");
+  animarContador("totalLitros", totalLitros, "litros");
+  animarContador("totalRegistros", dados.length, "numeros");
+  animarContador("mediaUnit", media, "moeda");
 
   Chart.defaults.color       = "#e2e8f0";
   Chart.defaults.borderColor = "rgba(255, 255, 255, 0.1)";
@@ -380,156 +402,38 @@ function renderComparativo(canvasId, autorizado, efetivado) {
   });
 }
 
-async function exportarPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-  const fileName = document.getElementById("fileName").innerText;
-  const totalGeral = document.getElementById("totalGeral").innerText;
-  const totalLitros = document.getElementById("totalLitros").innerText;
-  const totalReg = document.getElementById("totalRegistros").innerText;
-  const media = document.getElementById("mediaUnit").innerText;
+function animarContador(elementId, valorFinal, formato = "numero"){
+  const el = document.getElementById(elementId);
+  const duracao = 1500;
+  const steps = 60;
+  const intervalo = duracao/steps;
+  let step = 0;
 
-  // Função para desenhar o fundo e o cabeçalho (usada na pag 1 e nas novas)
-  const desenharLayoutBase = (docInstance) => {
-    docInstance.setFillColor(15, 23, 42);
-    docInstance.rect(0, 0, 297, 210, "F");
-  };
+  const timer = setInterval(() => {
+    step++;
+    const progresso = step / steps;
+    const ease = 1 - Math.pow(1 - progresso, 4);
+    const valorAtual = valorFinal * ease;
 
-  // ---- PÁGINA 1 — CARDS + GRÁFICOS ----
-  desenharLayoutBase(doc);
-
-  doc.setFontSize(16);
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.text("MV Penha Dashboard", 14, 14);
-
-  doc.setFontSize(8);
-  doc.setTextColor(148, 163, 184);
-  doc.text(`Planilha: ${fileName}  |  Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, 14, 20);
-
-  // Cards de Resumo
-  const cards = [
-    { label: "Valor Total", value: totalGeral, color: [16, 185, 129] },
-    { label: "Volume Total", value: totalLitros, color: [59, 130, 246] },
-    { label: "Registros", value: totalReg, color: [168, 85, 247] },
-    { label: "Média Unitária", value: media, color: [251, 146, 60] },
-  ];
-
-  cards.forEach((card, i) => {
-    const x = 14 + i * 70;
-    doc.setFillColor(30, 41, 59);
-    doc.roundedRect(x, 24, 66, 18, 2, 2, "F");
-    doc.setTextColor(148, 163, 184);
-    doc.setFontSize(7);
-    doc.text(card.label, x + 4, 30);
-    doc.setTextColor(...card.color);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text(card.value, x + 4, 37);
-  });
-
-  // Gráficos
-  const graficos = [
-    { id: "chartCombustivel", x: 14, y: 46 },
-    { id: "chartEstabelecimento", x: 154, y: 46 },
-    { id: "chartVeiculos", x: 14, y: 122 },
-    { id: "chartComparativo", x: 154, y: 122 },
-  ];
-
-  for (const g of graficos) {
-    const canvas = document.getElementById(g.id);
-    if (canvas) {
-      doc.setFillColor(30, 41, 59);
-      doc.roundedRect(g.x, g.y, 130, 72, 2, 2, "F");
-      const img = canvas.toDataURL("image/png");
-      doc.addImage(img, "PNG", g.x + 2, g.y + 2, 126, 68);
+    if(formato === "moeda"){
+      el.innerText = valorAtual.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    } else if(formato === "litros"){
+      el.innerText = `${Math.round(valorAtual).toLocaleString("pt-BR")} L`;
+    } else {
+      el.innerText = Math.round(valorAtual);
     }
-  }
 
-  // ---- PÁGINA 2 — TABELA ----
-  doc.addPage();
-  // O layout da página 2 e seguintes será controlado pelo autoTable
+    if(step >= steps) clearInterval(timer);
+  }, intervalo);
+}
 
-  const linhas = [];
-  document.querySelectorAll("#tabelaCorpo tr").forEach((tr) => {
-    const cols = tr.querySelectorAll("td");
-    if (cols.length > 0) {
-      linhas.push(Array.from(cols).map(td => td.innerText));
-    }
+function filtrarTabela(){
+  const busca = document.getElementById("campoBusca").value.toLowerCase().trim();
+  const linhas = document.querySelectorAll("#tabelaCorpo tr");
+
+  linhas.forEach((tr) => {
+    const texto = tr.innerText.toLowerCase();
+    tr.style.display = texto.includes(busca) ? "" : "none";
   });
-
-  doc.autoTable({
-    startY: 25,
-    head: [["Data", "Placa", "Estabelecimento", "Combustível", "L. Aut.", "L. Efet.", "Vlr. Unit.", "Vlr. Total", "Motorista"]],
-    body: linhas,
-    theme: "grid",
-    // 1. WILL DRAW PAGE: Pinta o fundo ANTES da tabela aparecer
-    willDrawPage: function(data) {
-      desenharLayoutBase(doc);
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.text("Detalhamento de Abastecimentos", 14, 15);
-    },
-    styles: {
-      fillColor: [30, 41, 59],
-      textColor: [226, 232, 240],
-      fontSize: 8,
-      cellPadding: 2,
-    },
-    headStyles: {
-      fillColor: [51, 65, 85],
-      textColor: [255, 255, 255],
-    },
-    alternateRowStyles: {
-      fillColor: [15, 23, 42],
-    },
-    // Ajuste de larguras para não estourar a página (Total < 265mm)
-    columnStyles: {
-      0: { cellWidth: 20 }, // Data
-      1: { cellWidth: 18 }, // Placa
-      2: { cellWidth: 50 }, // Estabelecimento
-      3: { cellWidth: 25 }, // Combustível
-      4: { cellWidth: 22 }, // L. Aut
-      5: { cellWidth: 22 }, // L. Efet
-      6: { cellWidth: 22 }, // Vlr Unit
-      7: { cellWidth: 22 }, // Vlr Total
-      8: { cellWidth: 'auto' }, // Motorista ocupa o que sobrar
-    },
-    margin: { left: 14, right: 14, top: 25 }
-  });
-
-  const pdfBlob = doc.output("blob");
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-
-  window._pdfUrl = pdfUrl;
-  window._pdfNome = `RELATORIO ${fileName.replace(".xlsx", "")}.pdf`;
-
-  mostrarModalPDF();
-}
-
-function mostrarModalPDF(){
-  const modal = document.getElementById("modalPDF");
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
-}
-
-function fecharModalPDF(){
-  const modal = document.getElementById("modalPDF");
-  modal.classList.add("hidden");
-  modal.classList.remove("flex");
-}
-
-function baixarPDF(){
-  const a = document.createElement("a");
-  a.href = window._pdfUrl;
-  a.download = window._pdfNome;
-  a.click();
-  fecharModalPDF();
-}
-
-function abrirPDF(){
-  window.open(window._pdfUrl, "_blank");
-  fecharModalPDF();
 }
