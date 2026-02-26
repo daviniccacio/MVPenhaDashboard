@@ -9,7 +9,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    icon: path.join(__dirname, "../renderer/img/mvpenhalogo2.ico"),
+    icon: path.join(__dirname, "../../assets/icon/mvpenhalogo2.ico"),
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
       nodeIntegration: false,

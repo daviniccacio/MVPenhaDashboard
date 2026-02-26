@@ -384,15 +384,20 @@ async function exportarPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-  const fileName    = document.getElementById("fileName").innerText;
-  const totalGeral  = document.getElementById("totalGeral").innerText;
+  const fileName = document.getElementById("fileName").innerText;
+  const totalGeral = document.getElementById("totalGeral").innerText;
   const totalLitros = document.getElementById("totalLitros").innerText;
-  const totalReg    = document.getElementById("totalRegistros").innerText;
-  const media       = document.getElementById("mediaUnit").innerText;
+  const totalReg = document.getElementById("totalRegistros").innerText;
+  const media = document.getElementById("mediaUnit").innerText;
+
+  // Função para desenhar o fundo e o cabeçalho (usada na pag 1 e nas novas)
+  const desenharLayoutBase = (docInstance) => {
+    docInstance.setFillColor(15, 23, 42);
+    docInstance.rect(0, 0, 297, 210, "F");
+  };
 
   // ---- PÁGINA 1 — CARDS + GRÁFICOS ----
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, 297, 210, "F");
+  desenharLayoutBase(doc);
 
   doc.setFontSize(16);
   doc.setTextColor(255, 255, 255);
@@ -401,24 +406,22 @@ async function exportarPDF() {
 
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
-  doc.setFont("helvetica", "normal");
   doc.text(`Planilha: ${fileName}  |  Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, 14, 20);
 
   // Cards de Resumo
   const cards = [
-    { label: "Valor Total",    value: totalGeral,  color: [16, 185, 129] },
-    { label: "Volume Total",   value: totalLitros, color: [59, 130, 246] },
-    { label: "Registros",      value: totalReg,    color: [168, 85, 247] },
-    { label: "Média Unitária", value: media,       color: [251, 146, 60] },
+    { label: "Valor Total", value: totalGeral, color: [16, 185, 129] },
+    { label: "Volume Total", value: totalLitros, color: [59, 130, 246] },
+    { label: "Registros", value: totalReg, color: [168, 85, 247] },
+    { label: "Média Unitária", value: media, color: [251, 146, 60] },
   ];
 
   cards.forEach((card, i) => {
     const x = 14 + i * 70;
     doc.setFillColor(30, 41, 59);
-    doc.roundedRect(x, 24, 64, 18, 2, 2, "F");
+    doc.roundedRect(x, 24, 66, 18, 2, 2, "F");
     doc.setTextColor(148, 163, 184);
     doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
     doc.text(card.label, x + 4, 30);
     doc.setTextColor(...card.color);
     doc.setFontSize(10);
@@ -426,12 +429,12 @@ async function exportarPDF() {
     doc.text(card.value, x + 4, 37);
   });
 
-  // Gráficos — 2x2
+  // Gráficos
   const graficos = [
-    { id: "chartCombustivel",     x: 14,  y: 46 },
+    { id: "chartCombustivel", x: 14, y: 46 },
     { id: "chartEstabelecimento", x: 154, y: 46 },
-    { id: "chartVeiculos",        x: 14,  y: 122 },
-    { id: "chartComparativo",     x: 154, y: 122 },
+    { id: "chartVeiculos", x: 14, y: 122 },
+    { id: "chartComparativo", x: 154, y: 122 },
   ];
 
   for (const g of graficos) {
@@ -439,95 +442,62 @@ async function exportarPDF() {
     if (canvas) {
       doc.setFillColor(30, 41, 59);
       doc.roundedRect(g.x, g.y, 130, 72, 2, 2, "F");
-
-      const img = canvas.toDataURL("image/png", 1.0);
-      
-      // Cálculo de proporção para caber no box
-      const imgProps = doc.getImageProperties(img);
-      const margin = 5;
-      const maxW = 120;
-      const maxH = 62;
-      const ratio = imgProps.width / imgProps.height;
-      
-      let w = maxW;
-      let h = w / ratio;
-      if (h > maxH) {
-        h = maxH;
-        w = h * ratio;
-      }
-
-      const centerOffX = (130 - w) / 2;
-      const centerOffY = (72 - h) / 2;
-
-      // CORREÇÃO: g.y em vez de g.x para o Offset vertical
-      doc.addImage(img, "PNG", g.x + centerOffX, g.y + centerOffY, w, h);
+      const img = canvas.toDataURL("image/png");
+      doc.addImage(img, "PNG", g.x + 2, g.y + 2, 126, 68);
     }
   }
 
   // ---- PÁGINA 2 — TABELA ----
   doc.addPage();
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, 297, 210, "F");
+  // O layout da página 2 e seguintes será controlado pelo autoTable
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.text("Detalhamento de Abastecimentos", 14, 13);
-
-  doc.setFontSize(8);
-  doc.setTextColor(148, 163, 184);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Planilha: ${fileName}`, 14, 19);
-
-  // Coleta linhas da tabela HTML
   const linhas = [];
   document.querySelectorAll("#tabelaCorpo tr").forEach((tr) => {
     const cols = tr.querySelectorAll("td");
     if (cols.length > 0) {
-      linhas.push([
-        cols[0].innerText,
-        cols[1].innerText,
-        cols[2].innerText,
-        cols[3].innerText,
-        cols[4].innerText,
-        cols[5].innerText,
-        cols[6].innerText,
-        cols[7].innerText,
-        cols[8].innerText,
-      ]);
+      linhas.push(Array.from(cols).map(td => td.innerText));
     }
   });
 
   doc.autoTable({
-    startY: 23,
-    head: [["Data", "Placa", "Estabelecimento", "Combustível", "Litros Autorizados", "Litros Efetivados", "Valor Unitário", "Valor Total", "Motorista"]],
+    startY: 25,
+    head: [["Data", "Placa", "Estabelecimento", "Combustível", "L. Aut.", "L. Efet.", "Vlr. Unit.", "Vlr. Total", "Motorista"]],
     body: linhas,
     theme: "grid",
+    // 1. WILL DRAW PAGE: Pinta o fundo ANTES da tabela aparecer
+    willDrawPage: function(data) {
+      desenharLayoutBase(doc);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Detalhamento de Abastecimentos", 14, 15);
+    },
     styles: {
       fillColor: [30, 41, 59],
       textColor: [226, 232, 240],
       fontSize: 8,
-      cellPadding: 3,
+      cellPadding: 2,
     },
     headStyles: {
       fillColor: [51, 65, 85],
       textColor: [255, 255, 255],
-      fontStyle: "bold",
     },
     alternateRowStyles: {
       fillColor: [15, 23, 42],
     },
+    // Ajuste de larguras para não estourar a página (Total < 265mm)
     columnStyles: {
-      0: { cellWidth: 22 }, // Data
-      1: { cellWidth: 20 }, // Placa
-      2: { cellWidth: 55 }, // Estabelecimento
-      3: { cellWidth: 28 }, // Combustível
-      4: { cellWidth: 25 }, // Litros Autorizados
-      5: { cellWidth: 25 }, // Litros Efetivados
-      6: { cellWidth: 22 }, // Valor Unitário
-      7: { cellWidth: 22 }, // Valor Total
-      8: { cellWidth: 48 }, // Motorista
+      0: { cellWidth: 20 }, // Data
+      1: { cellWidth: 18 }, // Placa
+      2: { cellWidth: 50 }, // Estabelecimento
+      3: { cellWidth: 25 }, // Combustível
+      4: { cellWidth: 22 }, // L. Aut
+      5: { cellWidth: 22 }, // L. Efet
+      6: { cellWidth: 22 }, // Vlr Unit
+      7: { cellWidth: 22 }, // Vlr Total
+      8: { cellWidth: 'auto' }, // Motorista ocupa o que sobrar
     },
+    margin: { left: 14, right: 14, top: 25 }
   });
 
   const pdfBlob = doc.output("blob");
