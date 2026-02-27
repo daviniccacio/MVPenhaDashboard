@@ -1,11 +1,30 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const os = require('os');
 const { Menu } = require('electron');
 const path = require("path");
 const xlsx = require("xlsx");
+const fs = require('fs');
 
 // Menu.setApplicationMenu(null);
+
+const historicoPath = path.join(os.homedir(), ".mvpenha_historico.json");
+
+function lerHistorico(){
+  try{
+    if(fs.existsSync(historicoPath)){
+      return JSON.parse(fs.readFileSync(historicoPath, "utf-8"));
+    }
+  } catch {}
+  return [];
+}
+
+function salvarHistorico(fileName, filePath){
+  let historico = lerHistorico();
+  historico = historico.filter(r => r.path !== filePath);
+  historico.unshift({ name: fileName, path: filePath, data: new Date().toLocaleDateString("pt-BR") });
+  historico = historico.slice(0, 3);
+  fs.writeFileSync(historicoPath, JSON.stringify(historico, null, 2));
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -80,6 +99,8 @@ ipcMain.handle("open-excel", async () => {
       return result;
     });
 
+    salvarHistorico(path.basename(filePaths[0]), filePaths[0]);
+
     return {
       data: cleanData,
       fileName: path.basename(filePaths[0]),
@@ -88,6 +109,49 @@ ipcMain.handle("open-excel", async () => {
     console.error("Erro ao ler Excel:", error);
     return null;
   }
+});
+
+ipcMain.handle("get-historico", () => lerHistorico());
+
+ipcMain.handle("open-excel-path", async (event, filePath) => {
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    const jsonRaw = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+    let headerRow = 0;
+    for(let i = 0;i < jsonRaw.length;i++){
+      const row = jsonRaw[i];
+      const temPlaca = row.some(c => c?.toString().trim() === "Placa");
+      const temEst = row.some(c => c?.toString().trim() === "Estabelecimento");
+      if(temPlaca && temEst) { headerRow = i; break; }
+    }
+
+    const headers = jsonRaw[headerRow];
+    const rawData = xlsx.utils.sheet_to_json(sheet, { range: headerRow, defval: "", blankrows: false });
+    const cleanData = rawData.map((row) => {
+      const entries = Object.entries(row);
+      const result = {};
+      entries.forEach(([k, v], i) => {
+        if(k.startsWith("__EMPTY")) {
+          result[headers[i]?.toString().trim() || k] = v;
+        } else {
+          result[k.trim()] = v;
+        }
+      });
+      return result;
+    });
+
+    return { data: cleanData, fileName: path.basename(filePath), filePath };
+  } catch(error){
+    console.error("Erro ao abrir pelo caminho:", error);
+    return null;
+  }
+});
+
+ipcMain.on("set-title", (event, title) => {
+  BrowserWindow.getFocusedWindow().setTitle(title);
 });
 
 app.whenReady().then(createWindow);
